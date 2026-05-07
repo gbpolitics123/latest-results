@@ -1,0 +1,164 @@
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@keyframes ld-pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+@keyframes ld-slide  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.ld-card { animation: ld-slide 0.3s ease forwards; }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<div style="font-family:'DM Sans',sans-serif; background:#0d1117; border-radius:10px; overflow:hidden; border:1px solid #21303f;">
+
+  <div style="background:#111820; padding:16px 24px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #21303f;">
+    <span style="width:8px;height:8px;border-radius:50%;background:#da3633;display:inline-block;animation:ld-pulse 1.4s infinite;"></span>
+    <span style="font-size:12px;font-weight:700;color:#8a9ab0;letter-spacing:0.1em;text-transform:uppercase;">Latest declarations</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+      <select id="ldSheet" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #21303f;background:#161d26;color:#ffffff;font-family:'DM Sans',sans-serif;">
+        <option value="LocalGov">Locals (ENG)</option>
+        <option value="Scottish">Holyrood</option>
+        <option value="Senedd">Senedd Cymru</option>
+        <option value="Mayoral">Mayorals (ENG)</option>
+      </select>
+      <button id="ldRefresh" style="background:#161d26;border:1px solid #21303f;border-radius:6px;padding:5px 10px;cursor:pointer;color:#8a9ab0;font-size:14px;line-height:1;">↺</button>
+    </div>
+  </div>
+
+  <div style="padding:20px 24px;" id="ldFeed"></div>
+
+  <div style="background:#111820;border-top:1px solid #21303f;padding:10px 24px;display:flex;justify-content:space-between;">
+    <span style="font-size:11px;color:#4a5568;" id="ldUpdated">—</span>
+    <span style="font-size:11px;color:#4a5568;">Auto-refreshes every 60s</span>
+  </div>
+
+</div>
+
+<script>
+var SHEET_ID = '1pqObzBVhI2vW1lijyoPvsUQzvG28-bz0qqUBRnPsUnA';
+
+var COLORS = {
+  'reform':      '#12B6CF',
+  'labour':      '#E4003B',
+  'conservative':'#003087',
+  'libdem':      '#FAA61A',
+  'lib dem':     '#FAA61A',
+  'libdems':     '#FAA61A',
+  'liberal':     '#FAA61A',
+  'green':       '#00B140',
+  'snp':         '#FFDD00',
+  'plaid':       '#3F8428',
+  'independent': '#6B7280',
+  'other':       '#6B7280',
+};
+
+function partyColor(name) {
+  if (!name) return '#6B7280';
+  var n = name.toLowerCase();
+  for (var k in COLORS) { if (n.indexOf(k) !== -1) return COLORS[k]; }
+  return '#6B7280';
+}
+
+function partyInitial(name) {
+  return (name || '?').trim().charAt(0).toUpperCase();
+}
+
+function parseCSV(text) {
+  return text.split('\n').map(function(row) {
+    var result = [], cur = '', inQ = false;
+    for (var i = 0; i < row.length; i++) {
+      var ch = row[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { result.push(cur.trim().replace(/^"|"$/g, '')); cur = ''; }
+      else { cur += ch; }
+    }
+    result.push(cur.trim().replace(/^"|"$/g, ''));
+    return result;
+  }).filter(function(r) { return r.some(function(c) { return c !== ''; }); });
+}
+
+function parseResults(csvText) {
+  var rows = parseCSV(csvText);
+  var results = [];
+  var inResults = false;
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    var key = (r[0] || '').toLowerCase().trim();
+    if (key === 'area' || key === 'constituency' || key === 'seat') { inResults = true; continue; }
+    if (inResults && r[0] && r[0].trim()) {
+      results.push({
+        area:     r[0].trim(),
+        party:    r[1] ? r[1].trim() : '',
+        result:   r[2] ? r[2].trim() : '',
+        majority: r[3] ? r[3].trim() : ''
+      });
+    }
+  }
+  return results.slice(-3).reverse();
+}
+
+function resultBadge(res) {
+  var r = (res || '').toLowerCase();
+  if (r.indexOf('gain') !== -1) return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(35,134,54,0.2);color:#3fb950;">Gain</span>';
+  if (r.indexOf('hold') !== -1) return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(33,131,192,0.2);color:#58a6ff;">Hold</span>';
+  if (r.indexOf('loss') !== -1 || r.indexOf('lose') !== -1) return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(218,54,51,0.2);color:#f85149;">Loss</span>';
+  return '';
+}
+
+var LABELS = ['Latest', '2nd', '3rd'];
+
+function renderFeed(results) {
+  var feed = document.getElementById('ldFeed');
+  if (!results.length) {
+    feed.innerHTML = '<div style="padding:32px;text-align:center;color:#8a9ab0;font-size:14px;">No results declared yet</div>';
+    return;
+  }
+  feed.innerHTML = results.map(function(r, i) {
+    var col = partyColor(r.party);
+    return '<div class="ld-card" style="display:flex;border:1px solid #21303f;border-radius:10px;overflow:hidden;margin-bottom:10px;background:#161d26;animation-delay:' + (i * 0.06) + 's;">'
+      + '<div style="width:5px;background:' + col + ';flex-shrink:0;"></div>'
+      + '<div style="padding:14px 16px;flex:1;min-width:0;">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">'
+          + '<span style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#4a5568;">' + LABELS[i] + '</span>'
+          + resultBadge(r.result)
+          + (r.majority ? '<span style="font-size:11px;color:#4a5568;margin-left:auto;">Maj: ' + r.majority + '</span>' : '')
+        + '</div>'
+        + '<div style="font-size:17px;font-weight:700;color:#ffffff;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.area || '—') + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+          + '<div style="width:22px;height:22px;border-radius:50%;background:' + col + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:' + (col === '#FFDD00' ? '#222' : '#fff') + ';flex-shrink:0;">' + partyInitial(r.party) + '</div>'
+          + '<span style="font-size:14px;color:#8a9ab0;">' + (r.party || '—') + '</span>'
+        + '</div>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+}
+
+function skeleton() {
+  document.getElementById('ldFeed').innerHTML = [0, 1, 2].map(function(i) {
+    return '<div style="border:1px solid #21303f;border-radius:10px;overflow:hidden;margin-bottom:10px;display:flex;height:88px;opacity:' + (1 - i * 0.2) + ';">'
+      + '<div style="width:5px;background:#21303f;"></div>'
+      + '<div style="padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:9px;">'
+        + '<div style="height:10px;width:55px;background:#21303f;border-radius:4px;"></div>'
+        + '<div style="height:15px;width:50%;background:#21303f;border-radius:4px;"></div>'
+        + '<div style="height:11px;width:90px;background:#21303f;border-radius:4px;"></div>'
+      + '</div></div>';
+  }).join('');
+}
+
+async function load() {
+  var sheet = document.getElementById('ldSheet').value;
+  skeleton();
+  try {
+    var resp = await fetch('https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(sheet));
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    renderFeed(parseResults(await resp.text()));
+    document.getElementById('ldUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  } catch(e) {
+    document.getElementById('ldFeed').innerHTML = '<div style="padding:24px;text-align:center;color:#f85149;font-size:13px;">Could not load data — check the sheet is public<br><small style="opacity:.6">' + e.message + '</small></div>';
+  }
+}
+
+document.getElementById('ldSheet').addEventListener('change', load);
+document.getElementById('ldRefresh').addEventListener('click', load);
+load();
+setInterval(load, 60000);
+</script>
