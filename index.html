@@ -1,34 +1,142 @@
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-@keyframes ld-pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
-@keyframes ld-slide  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-.ld-card { animation: ld-slide 0.3s ease forwards; }
-</style>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latest Declarations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d1117; font-family: 'DM Sans', sans-serif; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+@keyframes slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.card { animation: slideIn 0.3s ease forwards; }
 
-<div style="font-family:'DM Sans',sans-serif; background:#0d1117; border-radius:10px; overflow:hidden; border:1px solid #21303f;">
+.widget { background: #0d1117; border-radius: 10px; overflow: hidden; border: 1px solid #21303f; }
 
-  <div style="background:#111820; padding:16px 24px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #21303f;">
-    <span style="width:8px;height:8px;border-radius:50%;background:#da3633;display:inline-block;animation:ld-pulse 1.4s infinite;"></span>
-    <span style="font-size:12px;font-weight:700;color:#8a9ab0;letter-spacing:0.1em;text-transform:uppercase;">Latest declarations</span>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-      <select id="ldSheet" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #21303f;background:#161d26;color:#ffffff;font-family:'DM Sans',sans-serif;">
+.header {
+  background: #111820;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #21303f;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #da3633; flex-shrink: 0;
+  animation: pulse 1.4s infinite;
+}
+.header-title {
+  font-size: 12px; font-weight: 700;
+  color: #8a9ab0; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.header-controls { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+select {
+  font-size: 12px; padding: 5px 10px;
+  border-radius: 6px; border: 1px solid #21303f;
+  background: #161d26; color: #ffffff;
+  font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+.refresh-btn {
+  background: #161d26; border: 1px solid #21303f;
+  border-radius: 6px; padding: 5px 10px;
+  cursor: pointer; color: #8a9ab0;
+  font-size: 16px; line-height: 1;
+  transition: color 0.2s;
+}
+.refresh-btn:hover { color: #ffffff; }
+
+.feed { padding: 20px 24px; }
+
+.card {
+  display: flex;
+  border: 1px solid #21303f;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  background: #161d26;
+}
+.card-stripe { width: 5px; flex-shrink: 0; }
+.card-body { padding: 14px 16px; flex: 1; min-width: 0; }
+.card-meta {
+  display: flex; align-items: center;
+  gap: 8px; margin-bottom: 7px;
+}
+.card-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: #4a5568;
+}
+.card-maj { font-size: 11px; color: #4a5568; margin-left: auto; }
+.badge {
+  font-size: 11px; font-weight: 700;
+  padding: 2px 9px; border-radius: 4px;
+}
+.badge-gain { background: rgba(35,134,54,0.2); color: #3fb950; }
+.badge-hold { background: rgba(33,131,192,0.2); color: #58a6ff; }
+.badge-loss { background: rgba(218,54,51,0.2);  color: #f85149; }
+
+.card-area {
+  font-size: 17px; font-weight: 700; color: #ffffff;
+  margin-bottom: 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-party-row { display: flex; align-items: center; gap: 8px; }
+.party-circle {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.party-name { font-size: 14px; color: #8a9ab0; }
+
+.empty {
+  padding: 32px; text-align: center;
+  color: #8a9ab0; font-size: 14px;
+}
+.error-msg {
+  padding: 24px; text-align: center;
+  color: #f85149; font-size: 13px;
+}
+.skeleton-card {
+  border: 1px solid #21303f; border-radius: 10px;
+  overflow: hidden; margin-bottom: 10px;
+  display: flex; height: 88px;
+}
+.skeleton-stripe { width: 5px; background: #21303f; }
+.skeleton-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 9px; }
+.skeleton-line { background: #21303f; border-radius: 4px; }
+
+.footer {
+  background: #111820; border-top: 1px solid #21303f;
+  padding: 10px 24px;
+  display: flex; justify-content: space-between;
+}
+.footer span { font-size: 11px; color: #4a5568; }
+</style>
+</head>
+<body>
+<div class="widget">
+
+  <div class="header">
+    <div class="live-dot"></div>
+    <span class="header-title">Latest declarations</span>
+    <div class="header-controls">
+      <select id="ldSheet">
         <option value="LocalGov">Locals (ENG)</option>
         <option value="Scottish">Holyrood</option>
         <option value="Senedd">Senedd Cymru</option>
         <option value="Mayoral">Mayorals (ENG)</option>
       </select>
-      <button id="ldRefresh" style="background:#161d26;border:1px solid #21303f;border-radius:6px;padding:5px 10px;cursor:pointer;color:#8a9ab0;font-size:14px;line-height:1;">↺</button>
+      <button class="refresh-btn" id="ldRefresh" title="Refresh">↺</button>
     </div>
   </div>
 
-  <div style="padding:20px 24px;" id="ldFeed"></div>
+  <div class="feed" id="ldFeed"></div>
 
-  <div style="background:#111820;border-top:1px solid #21303f;padding:10px 24px;display:flex;justify-content:space-between;">
-    <span style="font-size:11px;color:#4a5568;" id="ldUpdated">—</span>
-    <span style="font-size:11px;color:#4a5568;">Auto-refreshes every 60s</span>
+  <div class="footer">
+    <span id="ldUpdated">—</span>
+    <span>Auto-refreshes every 60s</span>
   </div>
 
 </div>
@@ -36,129 +144,169 @@
 <script>
 var SHEET_ID = '1pqObzBVhI2vW1lijyoPvsUQzvG28-bz0qqUBRnPsUnA';
 
-var COLORS = {
-  'reform':      '#12B6CF',
-  'labour':      '#E4003B',
-  'conservative':'#003087',
-  'libdem':      '#FAA61A',
-  'lib dem':     '#FAA61A',
-  'libdems':     '#FAA61A',
-  'liberal':     '#FAA61A',
-  'green':       '#00B140',
-  'snp':         '#FFDD00',
-  'plaid':       '#3F8428',
-  'independent': '#6B7280',
-  'other':       '#6B7280',
+var PARTY_COLORS = {
+  'labour':       '#E4003B',
+  'reform':       '#12B6CF',
+  'conservative': '#003087',
+  'libdem':       '#FAA61A',
+  'lib dem':      '#FAA61A',
+  'liberal':      '#FAA61A',
+  'green':        '#00B140',
+  'snp':          '#FFDD00',
+  'plaid':        '#3F8428',
+  'independent':  '#6B7280',
+  'other':        '#6B7280'
 };
 
-function partyColor(name) {
+function getPartyColor(name) {
   if (!name) return '#6B7280';
-  var n = name.toLowerCase();
-  for (var k in COLORS) { if (n.indexOf(k) !== -1) return COLORS[k]; }
+  var n = name.toLowerCase().trim();
+  for (var key in PARTY_COLORS) {
+    if (n.indexOf(key) !== -1) return PARTY_COLORS[key];
+  }
   return '#6B7280';
 }
 
-function partyInitial(name) {
+function getInitial(name) {
   return (name || '?').trim().charAt(0).toUpperCase();
 }
 
-function parseCSV(text) {
-  return text.split('\n').map(function(row) {
-    var result = [], cur = '', inQ = false;
-    for (var i = 0; i < row.length; i++) {
-      var ch = row[i];
-      if (ch === '"') { inQ = !inQ; }
-      else if (ch === ',' && !inQ) { result.push(cur.trim().replace(/^"|"$/g, '')); cur = ''; }
-      else { cur += ch; }
-    }
-    result.push(cur.trim().replace(/^"|"$/g, ''));
-    return result;
-  }).filter(function(r) { return r.some(function(c) { return c !== ''; }); });
-}
-
-function parseResults(csvText) {
-  var rows = parseCSV(csvText);
-  var results = [];
-  var inResults = false;
-  for (var i = 0; i < rows.length; i++) {
-    var r = rows[i];
-    var key = (r[0] || '').toLowerCase().trim();
-    if (key === 'area' || key === 'constituency' || key === 'seat') { inResults = true; continue; }
-    if (inResults && r[0] && r[0].trim()) {
-      results.push({
-        area:     r[0].trim(),
-        party:    r[1] ? r[1].trim() : '',
-        result:   r[2] ? r[2].trim() : '',
-        majority: r[3] ? r[3].trim() : ''
-      });
-    }
-  }
-  return results.slice(-3).reverse();
-}
-
-function resultBadge(res) {
-  var r = (res || '').toLowerCase();
-  if (r.indexOf('gain') !== -1) return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(35,134,54,0.2);color:#3fb950;">Gain</span>';
-  if (r.indexOf('hold') !== -1) return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(33,131,192,0.2);color:#58a6ff;">Hold</span>';
-  if (r.indexOf('loss') !== -1 || r.indexOf('lose') !== -1) return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(218,54,51,0.2);color:#f85149;">Loss</span>';
+function getBadge(result) {
+  var r = (result || '').toLowerCase().trim();
+  if (r === 'gain')             return '<span class="badge badge-gain">Gain</span>';
+  if (r === 'hold')             return '<span class="badge badge-hold">Hold</span>';
+  if (r === 'loss' || r === 'lose') return '<span class="badge badge-loss">Loss</span>';
   return '';
 }
 
-var LABELS = ['Latest', '2nd', '3rd'];
+function parseCSV(text) {
+  var rows = [];
+  var lines = text.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var cols = [], cur = '', inQ = false;
+    for (var j = 0; j < line.length; j++) {
+      var ch = line[j];
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    cols.push(cur.trim());
+    rows.push(cols);
+  }
+  return rows;
+}
 
-function renderFeed(results) {
+function extractResults(csvText) {
+  var rows = parseCSV(csvText);
+  var results = [];
+  var inResults = false;
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var colA = (row[0] || '').toLowerCase().trim();
+
+    if (colA === 'area' || colA === 'constituency' || colA === 'seat') {
+      inResults = true;
+      continue;
+    }
+
+    if (inResults && row[0] && row[0].trim() !== '') {
+      var area     = (row[0] || '').trim();
+      var party    = (row[1] || '').trim();
+      var result   = (row[2] || '').trim();
+      var majority = (row[3] || '').trim();
+
+      if (area) {
+        results.push({ area: area, party: party, result: result, majority: majority });
+      }
+    }
+  }
+
+  return results.slice(-3).reverse();
+}
+
+function showSkeleton() {
+  var html = '';
+  for (var i = 0; i < 3; i++) {
+    var op = 1 - i * 0.25;
+    html += '<div class="skeleton-card" style="opacity:' + op + ';">'
+      + '<div class="skeleton-stripe"></div>'
+      + '<div class="skeleton-body">'
+        + '<div class="skeleton-line" style="height:10px;width:55px;"></div>'
+        + '<div class="skeleton-line" style="height:15px;width:50%;"></div>'
+        + '<div class="skeleton-line" style="height:11px;width:90px;"></div>'
+      + '</div></div>';
+  }
+  document.getElementById('ldFeed').innerHTML = html;
+}
+
+function renderResults(results) {
   var feed = document.getElementById('ldFeed');
   if (!results.length) {
-    feed.innerHTML = '<div style="padding:32px;text-align:center;color:#8a9ab0;font-size:14px;">No results declared yet</div>';
+    feed.innerHTML = '<div class="empty">No results declared yet</div>';
     return;
   }
-  feed.innerHTML = results.map(function(r, i) {
-    var col = partyColor(r.party);
-    return '<div class="ld-card" style="display:flex;border:1px solid #21303f;border-radius:10px;overflow:hidden;margin-bottom:10px;background:#161d26;animation-delay:' + (i * 0.06) + 's;">'
-      + '<div style="width:5px;background:' + col + ';flex-shrink:0;"></div>'
-      + '<div style="padding:14px 16px;flex:1;min-width:0;">'
-        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">'
-          + '<span style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#4a5568;">' + LABELS[i] + '</span>'
-          + resultBadge(r.result)
-          + (r.majority ? '<span style="font-size:11px;color:#4a5568;margin-left:auto;">Maj: ' + r.majority + '</span>' : '')
+  var labels = ['Latest', '2nd', '3rd'];
+  var html = '';
+  for (var i = 0; i < results.length; i++) {
+    var r = results[i];
+    var col = getPartyColor(r.party);
+    var textCol = (col === '#FFDD00') ? '#222222' : '#ffffff';
+    var delay = (i * 0.07) + 's';
+    html += '<div class="card" style="animation-delay:' + delay + ';">'
+      + '<div class="card-stripe" style="background:' + col + ';"></div>'
+      + '<div class="card-body">'
+        + '<div class="card-meta">'
+          + '<span class="card-label">' + (labels[i] || '') + '</span>'
+          + getBadge(r.result)
+          + (r.majority ? '<span class="card-maj">Maj: ' + r.majority + '</span>' : '')
         + '</div>'
-        + '<div style="font-size:17px;font-weight:700;color:#ffffff;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.area || '—') + '</div>'
-        + '<div style="display:flex;align-items:center;gap:8px;">'
-          + '<div style="width:22px;height:22px;border-radius:50%;background:' + col + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:' + (col === '#FFDD00' ? '#222' : '#fff') + ';flex-shrink:0;">' + partyInitial(r.party) + '</div>'
-          + '<span style="font-size:14px;color:#8a9ab0;">' + (r.party || '—') + '</span>'
+        + '<div class="card-area">' + r.area + '</div>'
+        + '<div class="card-party-row">'
+          + '<div class="party-circle" style="background:' + col + ';color:' + textCol + ';">' + getInitial(r.party) + '</div>'
+          + '<span class="party-name">' + (r.party || '—') + '</span>'
         + '</div>'
       + '</div>'
     + '</div>';
-  }).join('');
-}
-
-function skeleton() {
-  document.getElementById('ldFeed').innerHTML = [0, 1, 2].map(function(i) {
-    return '<div style="border:1px solid #21303f;border-radius:10px;overflow:hidden;margin-bottom:10px;display:flex;height:88px;opacity:' + (1 - i * 0.2) + ';">'
-      + '<div style="width:5px;background:#21303f;"></div>'
-      + '<div style="padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:9px;">'
-        + '<div style="height:10px;width:55px;background:#21303f;border-radius:4px;"></div>'
-        + '<div style="height:15px;width:50%;background:#21303f;border-radius:4px;"></div>'
-        + '<div style="height:11px;width:90px;background:#21303f;border-radius:4px;"></div>'
-      + '</div></div>';
-  }).join('');
+  }
+  feed.innerHTML = html;
 }
 
 async function load() {
   var sheet = document.getElementById('ldSheet').value;
-  skeleton();
+  showSkeleton();
   try {
-    var resp = await fetch('https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(sheet));
+    var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+      + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(sheet);
+    var resp = await fetch(url);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    renderFeed(parseResults(await resp.text()));
-    document.getElementById('ldUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  } catch(e) {
-    document.getElementById('ldFeed').innerHTML = '<div style="padding:24px;text-align:center;color:#f85149;font-size:13px;">Could not load data — check the sheet is public<br><small style="opacity:.6">' + e.message + '</small></div>';
+    var text = await resp.text();
+    var results = extractResults(text);
+    renderResults(results);
+    var now = new Date();
+    document.getElementById('ldUpdated').textContent = 'Updated '
+      + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  } catch(err) {
+    document.getElementById('ldFeed').innerHTML = '<div class="error-msg">'
+      + 'Could not load — make sure the sheet is set to public<br>'
+      + '<small style="opacity:0.6;">' + err.message + '</small>'
+      + '</div>';
   }
 }
 
 document.getElementById('ldSheet').addEventListener('change', load);
 document.getElementById('ldRefresh').addEventListener('click', load);
+
 load();
 setInterval(load, 60000);
+
+window.addEventListener('load', sendHeight);
+window.addEventListener('resize', sendHeight);
+setInterval(sendHeight, 2000);
+function sendHeight() {
+  window.parent.postMessage({ height: document.body.scrollHeight }, '*');
+}
 </script>
+</body>
+</html>
